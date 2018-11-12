@@ -5,8 +5,8 @@ library(gridExtra)
 #first, we need to load our data
 
 dataf = read.csv(file = "E:/data/fifa-18-demo-player-dataset/CompleteDataset.csv", stringsAsFactors = FALSE)
-dataf = tbl_df(df)
-dataf <- select(df, ID, X, Name, Age, Nationality, Overall, Club, Value, Wage, Preferred.Positions)
+dataf = tbl_df(dataf)
+dataf <- select(dataf, ID, X, Name, Age, Nationality, Overall, Club, Value, Wage, Preferred.Positions)
 
 head(dataf, 10)
 
@@ -41,12 +41,44 @@ levels(x)<-list(GK=c("GK"),
                 WIN=c("LM","RM","LW","RW"),
                 STR=c("ST","CF"))
 
+
+
 dataf<-mutate(dataf,Position=x)
+head(dataf,10)
+
+#anlogically, let's made column with more general overall
+y<-as.factor(dataf$Overall)
+
+levels(y)<-list("46-50"=c(46,47,48,49),
+                "50-59"=c(50,51,52,53,54,55,56,57,58,59),
+                "60-69"=c(60,61,62,63,64,65,66,67,68,69),
+                "70-79"=c(70,71,72,73,74,75,76,77,78,79),
+                "80-89"=c(80,81,82,83,84,85,86,87,88,89),
+                "90+"=c(90,91,92,93,94))
+
+dataf<-mutate(dataf,Level=y)
 head(dataf,10)
 
 #distribution of player's age
 players_age<-ggplot(data=dataf,aes(Age))
+players_ovr<-ggplot(data=dataf,aes(Overall)) #hope this gonna be useful later
 
 players_age+
   geom_histogram(col="red",aes(fill=..count..))+
-  ggtitle("PLayer's distribution based on age")
+  ggtitle("Players' distribution based on age")
+
+players_age+
+  geom_density(col="lightgreen", aes(fill = Position), alpha=0.8) + facet_grid(.~Position) + 
+  ggtitle("Players' distribution based on age and position")
+
+
+
+players_age+
+  geom_density(col="lightgreen", aes(fill = Level), alpha=0.8) + facet_grid(.~Level) + 
+  ggtitle("Players' distribution based on overall and position")
+
+
+players_age+
+  geom_density(col="lightgreen", aes(fill = Level), alpha=0.8) + 
+  ggtitle("Players' distribution based on overall and position")
+
