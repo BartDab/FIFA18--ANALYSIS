@@ -13,7 +13,7 @@ head(dataf, 10)
 #some cleaning, we need to remove Euro symbol and turn "K" and "M" into numeric values
 convertCurrency <- function(vector) {
   vector <- as.character(vector)
-  vector <- gsub("(â‚¬|,)","", vector) #I had problem with reading "€" symbol in csv file, so I replaced what I was seeing instead
+  vector <- gsub("(€|,)","", vector) #I had problem with reading "€" symbol in csv file, so I replaced what I was seeing instead
   result <- as.numeric(vector)
   
   kToThousands <- grep("K", vector)
@@ -46,39 +46,100 @@ levels(x)<-list(GK=c("GK"),
 dataf<-mutate(dataf,Position=x)
 head(dataf,10)
 
-#anlogically, let's made column with more general overall
-y<-as.factor(dataf$Overall)
+#making a column with more general overall
 
-levels(y)<-list("46-50"=c(46,47,48,49),
-                "50-59"=c(50,51,52,53,54,55,56,57,58,59),
-                "60-69"=c(60,61,62,63,64,65,66,67,68,69),
-                "70-79"=c(70,71,72,73,74,75,76,77,78,79),
-                "80-89"=c(80,81,82,83,84,85,86,87,88,89),
-                "90+"=c(90,91,92,93,94))
+ovr_breaks <- c(0, 50, 60, 70, 80, 90, Inf)
+ovr_labels <- c("50 or less", "50-60", "60-70", "70-80", "80-90", "90 or higher")
+ovr <- cut(x=dataf$Overall, breaks=ovr_breaks, 
+           labels=ovr_labels, include.lowest = TRUE)
+dataf <- mutate(dataf, ovr)
 
-dataf<-mutate(dataf,Level=y)
-head(dataf,10)
+head(dataf,20)
+
+players_age<-ggplot(data=dataf,aes(Age))
 
 #distribution of player's age
-players_age<-ggplot(data=dataf,aes(Age))
-players_ovr<-ggplot(data=dataf,aes(Overall)) #hope this gonna be useful later
-
 players_age+
   geom_histogram(col="red",aes(fill=..count..))+
   ggtitle("Players' distribution based on age")
 
+#divided into positions
 players_age+
   geom_density(col="lightgreen", aes(fill = Position), alpha=0.8) + facet_grid(.~Position) + 
   ggtitle("Players' distribution based on age and position")
 
-
-
+#dependence between age and overall
 players_age+
-  geom_density(col="lightgreen", aes(fill = Level), alpha=0.8) + facet_grid(.~Level) + 
-  ggtitle("Players' distribution based on overall and position")
+  geom_density(col="yellow", aes(fill = ovr), alpha=0.8) + 
+  ggtitle("Dependence between age and overall")
+
+players_ovr<-ggplot(data=dataf,aes(Overall))
+
+#distribution basen on overall
+players_ovr+
+  geom_histogram(col="orange",aes(fill=..count..))+
+  ggtitle("Players' distributuion basen od overall")
+
+countries_count<-count(dataf,Nationality)
+top20_countries<-top_n(countries_count,20,n)
+top20_countries_names<-top20_countries$Nationality
+country<-filter(dataf,Nationality==top20_countries_names)
+
+#checking number of players from countries
+ggplot(country,aes(x=Nationality))+
+  geom_bar(col="greenyellow",aes(fill=..count..))+
+  ggtitle("TOP 20 most numerous countries")
+
+#highest 1% values
+value_1<-quantile(dataf$Value,probs=0.99)
+value_filter<-filter(dataf,Value>value_1)
+value_result<-ggplot(value_filter,aes(Value))
+
+value_result+geom_histogram(aes(fill=..count..))+
+  ggtitle("Top 1% values' distrubution")
+
+#highest 1% wages
+wage_1<-quantile(dataf$Wage, probs=0.99)
+wage_filter<-filter(dataf,Wage>wage_1)
+wage_result<-ggplot(wage_filter,aes(Wage))
+
+wage_result+
+  geom_histogram(aes(fill=..count..))+
+  ggtitle("Top 1% wages' distribution")
 
 
-players_age+
-  geom_density(col="lightgreen", aes(fill = Level), alpha=0.8) + 
-  ggtitle("Players' distribution based on overall and position")
 
+
+
+
+# Create wage brackets
+w_breaks <- c(0, 100000, 200000, 300000, 400000, 500000, Inf)
+w_labels <- c("0-100k", "100k-200k", "200k-300k", "300k-400k", "400k-500k", "500k or higher")
+w_brackets <- cut(x=dataf$Wage, breaks=w_breaks, 
+                     labels=w_labels, include.lowest = TRUE)
+dataf <- mutate(dataf, w_brackets)
+# Create value brackets
+
+v_breaks <- c(0, 10000000, 20000000, 30000000, 40000000, 50000000, 60000000, 70000000, 80000000, 90000000, 100000000, Inf)
+v_labels <- c("0-10M", "10-20M", "20-30M", "30-40M", "40-50M","50-60M", "60-70M", "70-80M", "80-90M","90-100M","100M or higher")
+v_brackets <- cut(x=dataf$Value, breaks=v_breaks, 
+                      labels=v_labels, include.lowest = TRUE)
+dataf <-mutate(dataf, v_brackets)
+head(dataf)
+
+#big amount of players have wages lower than 100 000 or value lower than 30M, so we won't include this to have more readable graph
+
+graphWithout100K<-filter(dataf,w_brackets!="0-100k")
+
+ggplot(graphWithout100K,aes(x=w_brackets))+
+  geom_bar(aes(fill=..count..))+
+  ggtitle("Distruibution of wages (100K+")
+
+
+graphWithout30M<-filter(dataf,Value>30000000)
+
+ggplot(graphWithout30M,aes(x=v_brackets))+
+  geom_bar(aes(fill=..count..))+
+  ggtitle("Distribution of values (30M+")
+
+players_age_overall<-ggplot(dataf,aes(Age,Overall))
