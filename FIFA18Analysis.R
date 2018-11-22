@@ -107,11 +107,6 @@ wage_result+
   geom_histogram(aes(fill=..count..))+
   ggtitle("Top 1% wages' distribution")
 
-
-
-
-
-
 # Create wage brackets
 w_breaks <- c(0, 100000, 200000, 300000, 400000, 500000, Inf)
 w_labels <- c("0-100k", "100k-200k", "200k-300k", "300k-400k", "400k-500k", "500k or higher")
@@ -135,7 +130,6 @@ ggplot(graphWithout100K,aes(x=w_brackets))+
   geom_bar(aes(fill=..count..))+
   ggtitle("Distruibution of wages (100K+")
 
-
 graphWithout30M<-filter(dataf,Value>30000000)
 
 ggplot(graphWithout30M,aes(x=v_brackets))+
@@ -143,3 +137,28 @@ ggplot(graphWithout30M,aes(x=v_brackets))+
   ggtitle("Distribution of values (30M+")
 
 players_age_overall<-ggplot(dataf,aes(Age,Overall))
+
+players_age_overall+geom_point(aes(color=v_brackets))+
+  geom_smooth(color="brown")+
+  ggtitle("Distribution between age and overall based on value")
+  
+players_age_overall+geom_point(aes(color=w_brackets))+
+  geom_smooth(color="brown")+
+  ggtitle("Distribution between age and overall based on value")
+
+players_age_overall+geom_point(aes(color=ovr))+
+  geom_smooth(color="brown")+
+  ggtitle("Distribution between age and overall based on value")
+
+ggplot(dataf, aes(Preferred.Positions))+
+  geom_bar(aes(fill=..count..))+
+  ggtitle("Position's distribuion")
+
+right<-filter(dataf, Preferred.Positions %in% c("RM","RW"))
+right
+left<-filter(dataf, Preferred.Positions %in% c("LM","LW"))
+left
+#will work soon... i hope
+#ggplot(left,aes(Preferred.Positions)) +
+#  geom_point(data=left,colour="blue") +geom_point(data=right,colour='red')+
+#  xlim("Preferred.Positions")
