@@ -13,15 +13,14 @@ head(dataf, 10)
 #some cleaning, we need to remove Euro symbol and turn "K" and "M" into numeric values
 convertCurrency <- function(vector) {
   vector <- as.character(vector)
-  vector <- gsub("(€|,)","", vector) #I had problem with reading "€" symbol in csv file, so I replaced what I was seeing instead
+  vector <- gsub("(â‚¬|,)","", vector)
   result <- as.numeric(vector)
   
   kToThousands <- grep("K", vector)
-  result[kToThousands] <- as.numeric(gsub("K","",        vector[kToThousands])) * 1000
+  result[kToThousands] <- as.numeric(gsub("K","", vector[kToThousands])) * 1000
   
   mToMillions <- grep("M", vector)
-  result[mToMillions] <- as.numeric(gsub("M","", 
-                                         vector[mToMillions])) * 1000000
+  result[mToMillions] <- as.numeric(gsub("M","", vector[mToMillions])) * 1000000
   
   return(result)
 }
@@ -122,7 +121,8 @@ v_brackets <- cut(x=dataf$Value, breaks=v_breaks,
 dataf <-mutate(dataf, v_brackets)
 head(dataf)
 
-#big amount of players have wages lower than 100 000 or value lower than 30M, so we won't include this to have more readable graph
+#big amount of players have wages lower than 100 000 or value lower than 30M, 
+#so we won't include this to have more readable graph
 
 graphWithout100K<-filter(dataf,w_brackets!="0-100k")
 
@@ -154,11 +154,35 @@ ggplot(dataf, aes(Preferred.Positions))+
   geom_bar(aes(fill=..count..))+
   ggtitle("Position's distribuion")
 
-right<-filter(dataf, Preferred.Positions %in% c("RM","RW"))
-right
-left<-filter(dataf, Preferred.Positions %in% c("LM","LW"))
-left
-#will work soon... i hope
-#ggplot(left,aes(Preferred.Positions)) +
-#  geom_point(data=left,colour="blue") +geom_point(data=right,colour='red')+
-#  xlim("Preferred.Positions")
+#checking most valuable players by position
+
+pvalue<-filter(dataf,Value<20000000)
+
+pvalueplot<-ggplot(pvalue,aes(Preferred.Positions))+geom_bar(aes(fill=v_brackets))+ggtitle("Position based on Value")
+
+pvalue2<-filter(dataf,Value>20000000)
+
+pvalue2plot<-ggplot(pvalue2,aes(Preferred.Positions))+geom_bar(aes(fill=v_brackets))+ggtitle("Position based on Value part 2")
+
+grid.arrange(pvalueplot,pvalue2plot,ncol=1)
+
+#checking best paid players
+
+pwage<-filter(dataf,Wage>100000,Wage<200000)
+
+pwageplot<-ggplot(pwage,aes(Preferred.Positions))+geom_bar(aes(fill=w_brackets))+ggtitle("Position based on wage")
+
+pwage2<-filter(dataf,Wage>200000)
+
+pwage2plot<-ggplot(pwage2,aes(Preferred.Positions))+geom_bar(aes(fill=w_brackets))+ggtitle("Position based on wage part 2")
+
+grid.arrange(pwageplot,pwage2plot,ncol=1)
+
+#checking club's value
+by_clubs <- group_by(dataf, Club)
+club_v <- summarise(by_clubs, total_v = sum(Value))
+top20_club_v <- top_n(club_v,20,total_v)
+top20_club_v$Club<-as.factor(top20_club_v$Club)
+ggplot(top20_club_v,aes(x=Club,y=total_v))+
+  geom_bar(stat="identity",aes(fill=total_v))+coord_flip()+
+  ggtitle("Top 20 valuable clubs")
